@@ -1,0 +1,22 @@
+[package]
+name = "vodozemac-android"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vodozemac = { git = "https://github.com/matrix-org/vodozemac" }
+jni = { git = "https://github.com/prevoty/jni-rs" }
+
+[package.metadata.docs.rs]
+targets = [
+    "aarch64-linux-android",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+]
+
+[lib]
+crate-type = ["staticlib", "cdylib"]
+
+[target.aarch64-linux-android.dependencies]
+cpufeatures = "0.2.2" # Make sure 64-bit Android gets optimized crypto
