@@ -16,7 +16,4 @@ targets = [
 ]
 
 [lib]
-crate-type = ["staticlib", "cdylib"]
-
-[target.aarch64-linux-android.dependencies]
-cpufeatures = "0.2.2" # Make sure 64-bit Android gets optimized crypto
+crate-type = ["cdylib"]
