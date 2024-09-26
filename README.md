@@ -15,6 +15,8 @@ Android binding for the [Matrix vodozemac](https://github.com/matrix-org/vodozem
 Installation
 ========
 
+>  nm -D ./jniLibs/x86/libvodozemac_android.so
+
 > rustup target add \
 aarch64-linux-android \
 armv7-linux-androideabi \
