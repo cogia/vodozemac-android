@@ -84,7 +84,7 @@ impl fmt::Display for CustomError {
 impl Error for CustomError {}
 
 
-// pub extern "C" fn
+
 #[no_mangle]
 pub extern "C" fn Java_de_cogia_vodozemac_SessionConfig__1version1() -> jlong {
     Box::into_raw(Box::new(SessionConfig::version_1())) as jlong

@@ -7,6 +7,7 @@ public class OlmAccount {
     private static native IdentityKeys _identity_keys(final long sessionConfigPtr);
     private static native String _pickle(final long sessionConfigPtr, final String pickleKey);
     private static native long _from_pickle(final String pickle, final String pickleKey);
+    private static native long _from_pickle_lib_olm(final String pickle, final String pickleKey);
 
     public OlmAccount() {
         ptr = _new();
@@ -32,6 +33,11 @@ public class OlmAccount {
             throw new Exception("Pickle key must be 32 length");
         }
         long ptr = _from_pickle(pickle, pickleKey);
+        return new OlmAccount(ptr);
+    }
+
+    public static OlmAccount fromPickleLibOlm(final String pickle, final String pickleKey) {
+        long ptr = _from_pickle_lib_olm(pickle, pickleKey);
         return new OlmAccount(ptr);
     }
 }

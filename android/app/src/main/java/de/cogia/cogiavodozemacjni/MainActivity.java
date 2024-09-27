@@ -33,7 +33,9 @@ public class MainActivity extends AppCompatActivity {
             OlmAccount acc = OlmAccount.fromPickle(pickled, "63482006333619702407533275865961");
             IdentityKeys identityKeys = acc.identityKeys();
             IdentityKeys identityKEys = olmAccount.identityKeys();
-            OlmAccount.fromPickle(pickled, null);
+            //OlmAccount.fromPickle(pickled, null);
+            OlmAccount acc2 = OlmAccount.fromPickleLibOlm("pickled", "sdasdsad");
+            System.out.println(acc2.identityKeys().getCurve25519());
         } catch (Exception e) {
             System.out.println(e);
         }

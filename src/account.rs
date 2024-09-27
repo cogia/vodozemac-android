@@ -224,3 +224,19 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1from_1pickle(
 
     Box::into_raw(Box::new(acc)) as jlong
 }
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1from_1pickle_1lib_1olm(
+    mut env: JNIEnv,
+    _class: JClass,
+    pickle: JString,
+    pickle_key: JString
+) -> jlong {
+
+    let acc = Account::from_libolm_pickle(
+        jstring_to_string(&mut env, pickle),
+        jstring_to_string(&mut env, pickle_key)
+    );
+
+    Box::into_raw(Box::new(acc)) as jlong
+}
