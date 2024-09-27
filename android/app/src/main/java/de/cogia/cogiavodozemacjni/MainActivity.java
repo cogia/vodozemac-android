@@ -8,6 +8,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import de.cogia.vodozemac.IdentityKeys;
+import de.cogia.vodozemac.OlmAccount;
 import de.cogia.vodozemac.SessionConfig;
 
 public class MainActivity extends AppCompatActivity {
@@ -20,8 +22,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        long sessionConfigPtr = SessionConfig.version1();
-        System.out.println(SessionConfig.version(sessionConfigPtr));
+        SessionConfig sessionConfig = SessionConfig.version1();
+        System.out.println(sessionConfig.version());
+        System.out.println(SessionConfig.version2().version());
+
+        OlmAccount olmAccount = new OlmAccount();
+        IdentityKeys identityKEys = olmAccount.identityKeys();
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);

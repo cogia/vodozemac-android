@@ -1,3 +1,8 @@
+mod account;
+mod session;
+
+use std::error::Error;
+use std::fmt;
 #[allow(unused_variables)]
 // This is the interface to the JVM that we'll call the majority of our
 // methods on.
@@ -42,15 +47,53 @@ impl SessionConfig {
     }
 }
 
+#[repr(C)]
+pub struct IdentityKeys {
+    pub ed25519: String,
+    pub curve25519: String,
+}
+
+
+pub struct OlmMessage {
+    pub ciphertext: String,
+    pub message_type: u32,
+}
+
+impl OlmMessage {
+
+    pub fn new(message_type: u32, ciphertext: String) -> Self {
+        Self {
+            ciphertext,
+            message_type,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct CustomError(String);
+
+impl fmt::Display for CustomError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Error for CustomError {}
+
 
 // pub extern "C" fn
 #[no_mangle]
-pub extern "C" fn Java_de_cogia_vodozemac_SessionConfig_version1() -> jlong {
+pub extern "C" fn Java_de_cogia_vodozemac_SessionConfig__1version1() -> jlong {
     Box::into_raw(Box::new(SessionConfig::version_1())) as jlong
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_de_cogia_vodozemac_SessionConfig_version(mut env: JNIEnv,
+pub extern "C" fn Java_de_cogia_vodozemac_SessionConfig__1version2() -> jlong {
+    Box::into_raw(Box::new(SessionConfig::version_2())) as jlong
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_de_cogia_vodozemac_SessionConfig__1version(mut _env: JNIEnv,
                                                                        _class: JClass,
                                                                        counter_ptr: jlong,
 ) -> jlong {

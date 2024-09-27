@@ -2,7 +2,26 @@ package de.cogia.vodozemac;
 
 public class SessionConfig {
 
-    public static native long version1();
-    public static native long version(long sessionConfigPtr);
+    private final long ptr;
+    private static native long _version1();
+    private static native long _version2();
+    private static native long _version(long sessionConfigPtr);
 
+    public SessionConfig(long ptr) {
+        this.ptr = ptr;
+    }
+
+    public static SessionConfig version1() {
+        long ptr = _version1();
+        return new SessionConfig(ptr);
+    }
+
+    public static SessionConfig version2() {
+        long ptr = _version2();
+        return new SessionConfig(ptr);
+    }
+
+    public long version() {
+        return _version(ptr);
+    }
 }

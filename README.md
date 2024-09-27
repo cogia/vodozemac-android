@@ -15,29 +15,12 @@ Android binding for the [Matrix vodozemac](https://github.com/matrix-org/vodozem
 Installation
 ========
 
->  nm -D ./jniLibs/x86/libvodozemac_android.so
-
-> rustup target add \
-aarch64-linux-android \
-armv7-linux-androideabi \
-x86_64-linux-android \
-i686-linux-android
-> 
-> cargo ndk -t aarch64-linux-android -t armv7-linux-androideabi -t x86_64-linux-android -t i686-linux-android -o ./jniLibs build --release
-
-
-```text
-Install java-pack CLI 🛠️
-
-cargo install java-pack --version <version>
-Example:
-
-cargo install java-pack --version 0.1.0-alpha.4
-Add java-bindgen dependency
-
-cargo add java-bindgen
+```shell
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
 ```
-Cooming soon
+
+check 
+>  nm -D ./jniLibs/x86/libvodozemac_android.so
 
 
 Usage
