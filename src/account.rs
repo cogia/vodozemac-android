@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use vodozemac::base64_decode;
 use vodozemac::olm::{InboundCreationResult, SessionConfig};
 use std::error::Error;
+use std::result::IntoIter;
 use jni::JNIEnv;
-use jni::objects::{JObject, JValue};
-use jni::sys::{jlong, jobject};
-use super::{session::Session, OlmMessage, IdentityKeys, CustomError};
+use jni::objects::{JClass, JObject, JString, JValue};
+use jni::sys::{jlong, jobject, jshort, jstring};
+use super::{session::Session, OlmMessage, IdentityKeys, CustomError, jstring_to_string};
 
 
 pub struct Account {
@@ -187,4 +188,39 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1identity_1keys(mut env: J
     )
         .unwrap();
     java_object
+}
+
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1pickle(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    pickle_key: JString
+) -> jstring {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+    let p_key: String = env.get_string(&pickle_key).expect("Couldn't get Java string").into();
+
+    // Convert the output Rust String to a new jstring and return it
+    let output_jstring: jstring = **env
+        .new_string(acc.pickle(p_key).unwrap())
+        .expect("Failed to create output jstring");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1from_1pickle(
+    mut env: JNIEnv,
+    _class: JClass,
+    pickle: JString,
+    pickle_key: JString
+) -> jlong {
+
+    let acc = Account::from_pickle(
+        jstring_to_string(&mut env, pickle),
+        jstring_to_string(&mut env, pickle_key)
+    );
+
+    Box::into_raw(Box::new(acc)) as jlong
 }

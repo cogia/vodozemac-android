@@ -9,7 +9,7 @@ use std::fmt;
 //use jni::*;
 
 use jni::JNIEnv;
-use jni::objects::{JClass, JObject};
+use jni::objects::{JClass, JObject, JString};
 use jni::sys::jlong;
 
 #[no_mangle]
@@ -69,6 +69,9 @@ impl OlmMessage {
     }
 }
 
+pub fn jstring_to_string(env: &mut JNIEnv, obj: JString) -> String {
+    env.get_string(&obj).expect("Couldn't get Java string").into()
+}
 #[derive(Debug)]
 struct CustomError(String);
 

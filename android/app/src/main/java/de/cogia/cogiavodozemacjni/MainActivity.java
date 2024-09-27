@@ -27,7 +27,17 @@ public class MainActivity extends AppCompatActivity {
         System.out.println(SessionConfig.version2().version());
 
         OlmAccount olmAccount = new OlmAccount();
-        IdentityKeys identityKEys = olmAccount.identityKeys();
+        try {
+            String pickled = olmAccount.pickle("63482006333619702407533275865961");
+            System.out.println(pickled);
+            OlmAccount acc = OlmAccount.fromPickle(pickled, "63482006333619702407533275865961");
+            IdentityKeys identityKeys = acc.identityKeys();
+            IdentityKeys identityKEys = olmAccount.identityKeys();
+            OlmAccount.fromPickle(pickled, null);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
