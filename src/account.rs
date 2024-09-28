@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use vodozemac::base64_decode;
 use vodozemac::olm::{InboundCreationResult, SessionConfig};
 use std::error::Error;
-use std::result::IntoIter;
 use jni::JNIEnv;
-use jni::objects::{JClass, JObject, JString, JValue};
-use jni::sys::{jlong, jobject, jshort, jstring};
+use jni::objects::{JClass, JMap, JObject, JString, JValue};
+use jni::sys::{jlong, jobject, jstring, jvalue};
 use super::{session::Session, OlmMessage, IdentityKeys, CustomError, jstring_to_string};
 
 
@@ -63,7 +62,6 @@ impl Account {
         Ok(self.inner.pickle().encrypt(pickle_key))
     }
 
-
     pub fn ed25519_key(&self) -> String {
         self.inner.ed25519_key().to_base64()
     }
@@ -120,7 +118,7 @@ impl Account {
         &self,
         identity_key: String,
         one_time_key: String,
-        config: &crate::SessionConfig
+        config: &mut SessionConfig
     ) -> Result<Session, Box<dyn Error>> {
         let _config = if config.version() == 2 { vodozemac::megolm::SessionConfig::version_2() } else { vodozemac::megolm::SessionConfig::version_1() };
 
@@ -240,3 +238,185 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1from_1pickle_1lib_1olm(
 
     Box::into_raw(Box::new(acc)) as jlong
 }
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1ed25519_1key(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) -> jstring {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+
+    // Convert the output Rust String to a new jstring and return it
+    let output_jstring: jstring = **env
+        .new_string(acc.ed25519_key())
+        .expect("Failed to create output ed25519_key");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1curve25519Key(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) -> jstring {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+
+    // Convert the output Rust String to a new jstring and return it
+    let output_jstring: jstring = **env
+        .new_string(acc.curve25519_key())
+        .expect("Failed to create output curve25519_key");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1sign(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    message: JString,
+) -> jstring {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+
+    let msg = jstring_to_string(&mut env, message);
+    // Convert the output Rust String to a new jstring and return it
+    let output_jstring: jstring = **env
+        .new_string(acc.sign(msg))
+        .expect("Failed to create output curve25519_key");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1maxNumberOfOneTimeKeys(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) -> jlong {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+    acc.max_number_of_one_time_keys() as jlong
+}
+
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1oneTimeKeys(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) -> jstring {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+
+    let keys = acc.one_time_keys().unwrap();
+    let output_jstring: jstring = **env
+        .new_string(serde_json::to_string(&keys).unwrap())
+        .expect("Failed to create output ed25519_key");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1generateOneTimeKeys(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    amount: jlong,
+) {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+    acc.generate_one_time_keys(amount as u32);
+}
+
+// fallback_key
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1fallbackKey(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) -> jstring {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+
+    let keys = acc.fallback_key().unwrap();
+    let output_jstring: jstring = **env
+        .new_string(serde_json::to_string(&keys).unwrap())
+        .expect("Failed to create output fallback_key");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1generateFallbackKey(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+    acc.generate_fallback_key();
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1markKeysAsPublished(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+    acc.mark_keys_as_published();
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createOutboundSession(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    identity_key: JString,
+    one_time_key: JString,
+    config: jlong
+) -> jlong {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+    let session_config = unsafe { &mut *(config as *mut SessionConfig) };
+    let ik = jstring_to_string(&mut env, identity_key);
+    let otk = jstring_to_string(&mut env, one_time_key);
+    let session = acc.create_outbound_session(ik, otk, session_config).unwrap();
+
+    Box::into_raw(Box::new(session)) as jlong
+}
+
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createInboundSession<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass<'a>,
+    my_ptr: jlong,
+    identity_key: JString<'a>,
+    chipertext: JString<'a>,
+    message_type: jlong
+) -> JObject<'a> {
+    let acc = unsafe { &mut *(my_ptr as *mut Account) };
+    let ik = jstring_to_string(&mut env, identity_key);
+    let message = OlmMessage {
+        ciphertext: jstring_to_string(&mut env, chipertext),
+        message_type: message_type as u32
+    } ;
+    let res = acc.create_inbound_session(ik, &message).unwrap();
+
+    let ptr = Box::into_raw(Box::new(res.session)) as jlong;
+    let jmessage  =  env.byte_array_from_slice(&res.plaintext).unwrap();
+
+    let java_class = env.find_class("de/cogia/vodozemac/InboundCreationResult").unwrap();
+
+    let args: &[JValue] = &[
+        JValue::Long(ptr),
+        (&jmessage).into(),
+    ];
+
+    let java_object = env.new_object(
+        java_class,
+        "(Ljava/lang/Long;Ljava/lang/String;)V",
+        args
+    ).unwrap();
+
+    java_object
+}
+

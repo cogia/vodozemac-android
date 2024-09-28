@@ -31,6 +31,16 @@ public class MainActivity extends AppCompatActivity {
             String pickled = olmAccount.pickle("63482006333619702407533275865961");
             System.out.println(pickled);
             OlmAccount acc = OlmAccount.fromPickle(pickled, "63482006333619702407533275865961");
+            System.out.println(acc.curve25519Key());
+            System.out.println(acc.ed25519Key());
+            System.out.println(acc.sign("sdsdsd"));
+            System.out.println(acc.maxNumberOfOneTimeKeys());
+            acc.generateOneTimeKeys(50);
+            acc.generateOneTimeKeys(1111);
+            System.out.println(acc.oneTimeKeys());
+            acc.generateFallbackKey();
+            acc.markKeysAsPublished();
+            System.out.println(acc.fallbackKey());
             IdentityKeys identityKeys = acc.identityKeys();
             IdentityKeys identityKEys = olmAccount.identityKeys();
             //OlmAccount.fromPickle(pickled, null);

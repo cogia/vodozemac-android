@@ -7,8 +7,12 @@ public class SessionConfig {
     private static native long _version2();
     private static native long _version(long sessionConfigPtr);
 
-    public SessionConfig(long ptr) {
+    private SessionConfig(long ptr) {
         this.ptr = ptr;
+    }
+
+    public long getPtr() {
+        return ptr;
     }
 
     public static SessionConfig version1() {

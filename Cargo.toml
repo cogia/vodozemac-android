@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 vodozemac = { git = "https://github.com/matrix-org/vodozemac" }
 jni = { git = "https://github.com/prevoty/jni-rs" }
+serde_json = "1.0.128"
 
 [package.metadata.docs.rs]
 targets = [

@@ -1,8 +1,8 @@
 mod account;
 mod session;
 
+use std::{fmt};
 use std::error::Error;
-use std::fmt;
 #[allow(unused_variables)]
 // This is the interface to the JVM that we'll call the majority of our
 // methods on.
@@ -72,6 +72,8 @@ impl OlmMessage {
 pub fn jstring_to_string(env: &mut JNIEnv, obj: JString) -> String {
     env.get_string(&obj).expect("Couldn't get Java string").into()
 }
+
+
 #[derive(Debug)]
 struct CustomError(String);
 
