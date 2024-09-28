@@ -2,11 +2,11 @@ package de.cogia.vodozemac;
 
 public class InboundCreationResult {
 
-    private final Session session;
+    private final OlmSession olmSession;
     private final String plainText;
 
     public InboundCreationResult(final long sessionPtr, final String plainText) {
-        this.session = new Session(sessionPtr);
+        this.olmSession = new OlmSession(sessionPtr);
         this.plainText = plainText;
     }
 
@@ -14,8 +14,8 @@ public class InboundCreationResult {
         return plainText;
     }
 
-    public Session getSession() {
-        return session;
+    public OlmSession getSession() {
+        return olmSession;
     }
 
 }

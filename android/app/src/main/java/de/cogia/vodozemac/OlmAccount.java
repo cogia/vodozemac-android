@@ -115,11 +115,11 @@ public class OlmAccount {
         _markKeysAsPublished(ptr);
     }
 
-    public Session createOutboundSession(final String identityKey,
-                                         final String oneTimeKey,
-                                         final SessionConfig config) {
+    public OlmSession createOutboundSession(final String identityKey,
+                                            final String oneTimeKey,
+                                            final SessionConfig config) {
         long sessionPtr = _createOutboundSession(ptr, identityKey, oneTimeKey, config.getPtr());
-        return new Session(sessionPtr);
+        return new OlmSession(sessionPtr);
     }
 
     public InboundCreationResult createInboundSession(final String identityKey, final OlmMessage message) {

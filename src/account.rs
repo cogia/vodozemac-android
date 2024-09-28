@@ -3,8 +3,8 @@ use vodozemac::base64_decode;
 use vodozemac::olm::{InboundCreationResult, SessionConfig};
 use std::error::Error;
 use jni::JNIEnv;
-use jni::objects::{JClass, JMap, JObject, JString, JValue};
-use jni::sys::{jlong, jobject, jstring, jvalue};
+use jni::objects::{JClass, JObject, JString, JValue};
+use jni::sys::{jlong, jstring};
 use super::{session::Session, OlmMessage, IdentityKeys, CustomError, jstring_to_string};
 
 

@@ -73,7 +73,6 @@ pub fn jstring_to_string(env: &mut JNIEnv, obj: JString) -> String {
     env.get_string(&obj).expect("Couldn't get Java string").into()
 }
 
-
 #[derive(Debug)]
 struct CustomError(String);
 
