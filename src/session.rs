@@ -1,7 +1,7 @@
 use std::error::Error;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
-use jni::sys::{jboolean, jlong, jstring};
+use jni::sys::{jboolean, jlong, jobject, jstring};
 use vodozemac::{base64_decode, base64_encode};
 use super::{jstring_to_string, CustomError, OlmMessage};
 
@@ -146,7 +146,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1from_1pickle_1lib_1olm(
 }
 
 #[no_mangle]
-pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1session_1id(
+pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1session_1id(
     mut env: JNIEnv,
     _class: JClass,
     my_ptr: jlong,
@@ -206,32 +206,31 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1decrypt(
 #[no_mangle]
 pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1encrypt<'a>(
     mut env: JNIEnv<'a>,
-    _class: JClass<'a>,
+    _class: JClass,
     my_ptr: jlong,
     message: JString<'a>,
 ) -> JObject<'a> {
     let session = unsafe { &mut *(my_ptr as *mut Session) };
 
 
-    let crypted = jstring_to_string(&mut env, message);
+    let crypted = env.get_string(&message).expect("Couldn't get Java string").into();
     let res = session.encrypt(crypted);
 
-    let java_class = env.find_class("de/cogia/vodozemac/OlMessage").unwrap();
+    let java_class = env.find_class("de/cogia/vodozemac/OlmMessage").unwrap();
 
     let msg_type = res.message_type as jlong;
     let msg = env.new_string(res.ciphertext).unwrap();
 
     let args: &[JValue] = &[
-        JValue::Object(&msg),
-        JValue::Long(msg_type),
+        (&msg).into(),
+        (msg_type).into(),
     ];
 
     let java_object = env.new_object(
         java_class,
-        "(Ljava/lang/String;Ljava/lang/Long;)V",
+        "(Ljava/lang/String;J)V",
         args
     ).unwrap();
 
-    java_object
+    java_object.into()
 }
-//encrypt

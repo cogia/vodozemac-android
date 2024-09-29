@@ -8,8 +8,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import org.json.JSONException;
+
 import de.cogia.vodozemac.IdentityKeys;
+import de.cogia.vodozemac.InboundCreationResult;
 import de.cogia.vodozemac.OlmAccount;
+import de.cogia.vodozemac.OlmMessage;
+import de.cogia.vodozemac.OlmSession;
 import de.cogia.vodozemac.SessionConfig;
 
 public class MainActivity extends AppCompatActivity {
@@ -50,6 +55,12 @@ public class MainActivity extends AppCompatActivity {
             System.out.println(e);
         }
 
+        try {
+            testEncryption();
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
@@ -58,5 +69,28 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+    public static void testEncryption() throws JSONException {
+        OlmAccount alice = new OlmAccount();
+        OlmAccount bob = new OlmAccount();
+
+        bob.generateOneTimeKeys(4);
+
+        String[] bobOnetimeKeys = bob.oneTimeKeys().values().toArray(new String[0]);
+        String bobFirstOnetimeKey = bobOnetimeKeys[0];
+
+        OlmSession session = alice.createOutboundSession(bob.curve25519Key(), bobFirstOnetimeKey, SessionConfig.version2());
+        System.out.println(session.sessionId());
+        OlmMessage res = session.encrypt("Hello there");
+        InboundCreationResult iRes = bob.createInboundSession(alice.curve25519Key(), res);
+
+        System.out.println(iRes.getPlainText() ==  "Hello there");
+
+        OlmMessage message = iRes.getSession().encrypt("ddddd");
+        String decrypted2 = session.decrypt(message);
+        System.out.println(message.getCiphertext() == decrypted2);
+        // one time key removes on first usage
+        //t.false(isEqual(bobOnetimeKeys, Object.values(bob.oneTimeKeys)))
+        //t.false(Object.values(bob.oneTimeKeys).includes(bobFirstOnetimeKey))*/
     }
 }
