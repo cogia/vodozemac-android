@@ -1,7 +1,7 @@
 use std::error::Error;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
-use jni::sys::{jboolean, jlong, jobject, jstring};
+use jni::sys::{jboolean, jlong, jstring};
 use vodozemac::{base64_decode, base64_encode};
 use super::{jstring_to_string, CustomError, OlmMessage};
 
