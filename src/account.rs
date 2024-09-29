@@ -172,6 +172,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1identity_1keys(mut env: J
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
     let keys = acc.identity_keys().unwrap();
     let java_class = env.find_class("de/cogia/vodozemac/IdentityKeys").unwrap();
+
     let ed25519 = env.new_string(keys.ed25519).unwrap();
     let curve25519 = env.new_string(keys.curve25519).unwrap();
     let args: &[JValue] = &[
@@ -387,36 +388,40 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createOutboundSession(
 #[no_mangle]
 pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createInboundSession<'a>(
     mut env: JNIEnv<'a>,
-    _class: JClass<'a>,
+    _class: JClass,
     my_ptr: jlong,
     identity_key: JString<'a>,
     chipertext: JString<'a>,
     message_type: jlong
 ) -> JObject<'a> {
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
+
     let ik = jstring_to_string(&mut env, identity_key);
     let message = OlmMessage {
         ciphertext: jstring_to_string(&mut env, chipertext),
         message_type: message_type as u32
-    } ;
+    };
+
     let res = acc.create_inbound_session(ik, &message).unwrap();
 
-    let ptr = Box::into_raw(Box::new(res.session)) as jlong;
-    let jmessage  =  env.byte_array_from_slice(&res.plaintext).unwrap();
+    let session = Session { inner: res.session };
+    let ptr = Box::into_raw(Box::new(session)) as jlong;
+    let message = String::from_utf8_lossy(&res.plaintext).to_string();
+    let jmessage  =  env.new_string(&message).unwrap();
 
     let java_class = env.find_class("de/cogia/vodozemac/InboundCreationResult").unwrap();
 
     let args: &[JValue] = &[
-        JValue::Long(ptr),
         (&jmessage).into(),
+        (ptr).into(),
     ];
 
     let java_object = env.new_object(
         java_class,
-        "(Ljava/lang/Long;Ljava/lang/String;)V",
+        "(Ljava/lang/String;J)V",
         args
     ).unwrap();
 
-    java_object
+    java_object.into()
 }
 

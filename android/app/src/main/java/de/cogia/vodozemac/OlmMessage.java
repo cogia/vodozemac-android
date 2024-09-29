@@ -5,7 +5,7 @@ public class OlmMessage {
     private final long messageType;
     private final String ciphertext;
 
-    public OlmMessage(String ciphertext, long message_type) {
+    public OlmMessage(final String ciphertext, final long message_type) {
         this.ciphertext = ciphertext;
         this.messageType = message_type;
     }
