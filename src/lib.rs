@@ -1,6 +1,7 @@
 mod account;
 mod session;
 mod sas;
+mod group_sessions;
 
 use std::{fmt};
 use std::error::Error;
