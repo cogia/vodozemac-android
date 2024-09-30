@@ -1,10 +1,11 @@
 use std::error::Error;
 use jni::JNIEnv;
-use jni::objects::{JClass, JString};
+use jni::objects::{JClass, JObject, JString, JValue};
 use jni::sys::{jlong, jstring};
-use super::{jstring_to_string, CustomError, SessionConfig};
+use super::{jstring_to_string, CustomError, OlmMessage, SessionConfig};
 
 use vodozemac::megolm::{ExportedSessionKey, MegolmMessage, SessionKey};
+use crate::account::Account;
 use crate::session::Session;
 
 pub struct GroupSession {
@@ -244,3 +245,157 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmGroupSession__1from_1pickle(
 
     Box::into_raw(Box::new(group)) as jlong
 }
+
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1new(
+    mut env: JNIEnv,
+    _class: JClass,
+    session_key: JString,
+    config: jlong,
+) -> jlong {
+    let session_config = unsafe { &mut *(config as *mut SessionConfig) };
+    let session_key_local = jstring_to_string(&mut env, session_key);
+    Box::into_raw(Box::new(InboundGroupSession::new(session_key_local, session_config))) as jlong
+}
+
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1pickle(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    pswd: JString
+) -> jstring {
+    let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
+    let local_pswd = jstring_to_string(&mut env, pswd);
+
+    // Convert the output Rust String to a new jstring and return it
+    let output_jstring: jstring = **env
+        .new_string(session.pickle(local_pswd.as_bytes()).unwrap())
+        .expect("Failed to create output session_key");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1from_1pickle(
+    mut env: JNIEnv,
+    _class: JClass,
+    pickle: JString,
+    pswd: JString
+) -> jlong {
+
+    let pickle = jstring_to_string(&mut env, pickle);
+    let pickle_pswd = jstring_to_string(&mut env, pswd);
+
+    let group = InboundGroupSession::from_pickle(pickle, pickle_pswd);
+
+    Box::into_raw(Box::new(group)) as jlong
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1from_1libolm_1pickle(
+    mut env: JNIEnv,
+    _class: JClass,
+    pickle: JString,
+    pswd: JString
+) -> jlong {
+
+    let pickle = jstring_to_string(&mut env, pickle);
+    let pickle_pswd = jstring_to_string(&mut env, pswd);
+
+    let group = InboundGroupSession::from_libolm_pickle(pickle, pickle_pswd);
+
+    Box::into_raw(Box::new(group)) as jlong
+}
+
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1session_1id(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) -> jstring {
+    let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
+
+    // Convert the output Rust String to a new jstring and return it
+    let output_jstring: jstring = **env
+        .new_string(session.session_id())
+        .expect("Failed to create output session_id");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1first_1known_1index(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+) -> jlong {
+    let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
+    session.first_known_index() as jlong
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1import(
+    mut env: JNIEnv,
+    _class: JClass,
+    session_key: JString,
+    config: jlong,
+) -> jlong {
+    let session_config = unsafe { &mut *(config as *mut SessionConfig) };
+    let session_key_local = jstring_to_string(&mut env, session_key);
+    let session = InboundGroupSession::import(session_key_local, session_config).unwrap();
+    Box::into_raw(Box::new(session)) as jlong
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1export_1at(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    index: jlong,
+) -> jstring {
+    let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
+    ;
+    // Convert the output Rust String to a new jstring and return it
+    let output_jstring: jstring = **env
+        .new_string(session.export_at(index as u32).unwrap())
+        .expect("Failed to create output session_id");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1decrypt<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass,
+    my_ptr: jlong,
+    chipertext: JString<'a>,
+) -> JObject<'a> {
+    let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
+
+    let chipertext_local = jstring_to_string(&mut env, chipertext);
+    let res = session.decrypt(chipertext_local).unwrap();
+
+    let decrypted_message = env.new_string(res.plaintext).unwrap();
+    let decrypted_message_index = res.message_index as jlong;
+
+
+    let java_class = env.find_class("de/cogia/vodozemac/OlmDecryptedMessage").unwrap();
+
+    let args: &[JValue] = &[
+        (&decrypted_message).into(),
+        (decrypted_message_index).into(),
+    ];
+
+    let java_object = env.new_object(
+        java_class,
+        "(Ljava/lang/String;J)V",
+        args
+    ).unwrap();
+
+    java_object.into()
+}
+
