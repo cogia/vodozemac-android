@@ -11,10 +11,10 @@ public class OlmMessage {
     }
 
     public String getCiphertext() {
-        return this.ciphertext;
+        return ciphertext;
     }
 
     public long getMessageType() {
-        return this.messageType;
+        return messageType;
     }
 }

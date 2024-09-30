@@ -104,7 +104,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSas__1diffie_1hellman(
     key: JString,
 ) -> jlong {
     let sas = unsafe { &mut *(my_ptr as *mut Sas) };
-
+&mut sas
     let localKey = jstring_to_string(&mut env, key);
     let established = sas.diffie_hellman(localKey).unwrap();
     Box::into_raw(Box::new(established)) as jlong
