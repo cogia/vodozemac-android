@@ -5,6 +5,7 @@ mod group_sessions;
 
 use std::{fmt};
 use std::error::Error;
+use jni::descriptors::Desc;
 #[allow(unused_variables)]
 // This is the interface to the JVM that we'll call the majority of our
 // methods on.
@@ -75,6 +76,7 @@ pub fn jstring_to_string(env: &mut JNIEnv, obj: JString) -> String {
     env.get_string(&obj).expect("Couldn't get Java string").into()
 }
 
+
 #[derive(Debug)]
 struct CustomError(String);
 
@@ -97,6 +99,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_SessionConfig__1version1() -> jlong {
 pub extern "C" fn Java_de_cogia_vodozemac_SessionConfig__1version2() -> jlong {
     Box::into_raw(Box::new(SessionConfig::version_2())) as jlong
 }
+
 
 #[no_mangle]
 pub unsafe extern "C" fn Java_de_cogia_vodozemac_SessionConfig__1version(mut _env: JNIEnv,

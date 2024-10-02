@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use vodozemac::base64_decode;
 use vodozemac::olm::{InboundCreationResult, SessionConfig};
 use std::error::Error;
+use std::panic;
 use jni::JNIEnv;
-use jni::objects::{JClass, JObject, JString, JValue};
+use jni::objects::{JClass, JObject, JString, JThrowable, JValue};
 use jni::sys::{jlong, jstring};
 use super::{session::Session, OlmMessage, IdentityKeys, CustomError, jstring_to_string};
 
@@ -402,7 +403,24 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createInboundSession<'a>(
         message_type: message_type as u32
     };
 
-    let res = acc.create_inbound_session(ik, &message).unwrap();
+    //let res2 =  acc.create_inbound_session(ik, &message).except();
+    let res;
+    match acc.create_inbound_session(ik, &message) {
+        Ok(value) => {
+            res = value;
+        }
+        Err(error) => {
+            let msg_obj = env.new_string(error.to_string()).unwrap();
+            let obj = env.new_object(
+                "java/lang/Throwable",
+                "(Ljava/lang/String;)V",
+                &[(&msg_obj).into()]
+            ).unwrap();
+            let throwable = JThrowable::from(obj);
+            env.throw(throwable).unwrap();
+            return JObject::null();
+        }
+    }
 
     let session = Session { inner: res.session };
     let ptr = Box::into_raw(Box::new(session)) as jlong;

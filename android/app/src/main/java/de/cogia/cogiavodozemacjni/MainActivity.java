@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
         System.out.println(session.sessionId());
         OlmMessage res = session.encrypt("Hello there");
         InboundCreationResult iRes = bob.createInboundSession(alice.curve25519Key(), res);
+        InboundCreationResult iRes2 = bob.createInboundSession(alice.curve25519Key(), res);
 
         System.out.println(iRes.getPlainText() ==  "Hello there");
 

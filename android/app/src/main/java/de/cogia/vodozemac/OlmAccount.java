@@ -29,7 +29,7 @@ public class OlmAccount {
     private static native InboundCreationResult _createInboundSession(final long ptr,
                                                                       final String identityKey,
                                                                       final String chiperText,
-                                                                      final long messageType);
+                                                                      final long messageType) throws Throwable;
 
     public OlmAccount() {
         ptr = _new();
@@ -123,6 +123,10 @@ public class OlmAccount {
     }
 
     public InboundCreationResult createInboundSession(final String identityKey, final OlmMessage message) {
-         return _createInboundSession(ptr, identityKey, message.getCiphertext(), message.getMessageType());
+        try {
+            return _createInboundSession(ptr, identityKey, message.getCiphertext(), message.getMessageType());
+        } catch (Throwable t) {
+            throw new RuntimeException(t.getMessage());
+        }
     }
 }
