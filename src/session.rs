@@ -3,7 +3,7 @@ use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni::sys::{jboolean, jlong, jstring};
 use vodozemac::{base64_decode, base64_encode};
-use super::{jstring_to_string, CustomError, OlmMessage};
+use super::{jstring_to_string, result_or_java_exception, CustomError, OlmMessage};
 
 pub struct Session {
     pub(super) inner: vodozemac::olm::Session,
@@ -105,9 +105,18 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1pickle(
     let session = unsafe { &mut *(my_ptr as *mut Session) };
     let p_key: String = env.get_string(&pickle_key).expect("Couldn't get Java string").into();
 
+    let pickle;
+    match result_or_java_exception(&mut env, session.pickle(p_key)) {
+        Ok(value) => {
+            pickle = value;
+        }
+        Err(_) => {
+            return **env.new_string("").expect("Couldn't create Java string");
+        }
+    }
     // Convert the output Rust String to a new jstring and return it
     let output_jstring: jstring = **env
-        .new_string(session.pickle(p_key).unwrap())
+        .new_string(pickle)
         .expect("Failed to create output session pickle");
 
     output_jstring
@@ -196,8 +205,18 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1decrypt(
         message_type: message_type.try_into().unwrap(),
     };
 
+    let res;
+    match result_or_java_exception(&mut env, session.decrypt(&message)) {
+        Ok(value) => {
+            res = value;
+        }
+        Err(_) => {
+            return **env.new_string("").expect("Couldn't create Java string");
+        }
+    }
+
     let output_jstring: jstring = **env
-        .new_string(session.decrypt(&message).unwrap())
+        .new_string(res)
         .expect("Failed to create output session_id");
 
     output_jstring
