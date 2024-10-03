@@ -6,7 +6,7 @@ use std::panic;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JThrowable, JValue};
 use jni::sys::{jlong, jstring};
-use super::{session::Session, OlmMessage, IdentityKeys, CustomError, jstring_to_string};
+use super::{session::Session, OlmMessage, IdentityKeys, CustomError, jstring_to_string, result_or_java_exception};
 
 
 pub struct Account {
@@ -21,7 +21,7 @@ impl Account {
         }
     }
 
-    pub fn identity_keys(&self) -> Result<IdentityKeys, &'static str> {
+    pub fn identity_keys(&self) -> Result<IdentityKeys, Box<dyn Error>> {
         let identity_keys = self.inner.identity_keys();//.map_err(|_| {});
         Ok(
             IdentityKeys {
@@ -79,7 +79,7 @@ impl Account {
         self.inner.max_number_of_one_time_keys().try_into().unwrap()
     }
 
-    pub fn one_time_keys(&self) -> Result<HashMap<String, String>, &'static str> {
+    pub fn one_time_keys(&self) -> Result<HashMap<String, String>, Box<dyn Error>> {
         let _keys: HashMap<_, _> = self
             .inner
             .one_time_keys()
@@ -95,7 +95,7 @@ impl Account {
     }
 
 
-    pub fn fallback_key(&self) -> Result<HashMap<String, String>, &'static str> {
+    pub fn fallback_key(&self) -> Result<HashMap<String, String>, Box<dyn Error>> {
         let _keys: HashMap<String, String> = self
             .inner
             .fallback_key()
@@ -171,7 +171,15 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1new() -> jlong {
 #[no_mangle]
 pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1identity_1keys(mut env: JNIEnv, my_ptr: jlong) -> JObject {
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
-    let keys = acc.identity_keys().unwrap();
+    let keys; // = acc.identity_keys().unwrap();
+    match result_or_java_exception(&mut env, acc.identity_keys()) {
+        Ok(value) => {
+            keys = value;
+        }
+        Err(_) => {
+            return JObject::null();
+        }
+    }
     let java_class = env.find_class("de/cogia/vodozemac/IdentityKeys").unwrap();
 
     let ed25519 = env.new_string(keys.ed25519).unwrap();
@@ -201,9 +209,18 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1pickle(
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
     let p_key: String = env.get_string(&pickle_key).expect("Couldn't get Java string").into();
 
+    let pickle;
+    match result_or_java_exception(&mut env, acc.pickle(p_key)) {
+        Ok(value) => {
+            pickle = value;
+        }
+        Err(_) => {
+            return **env.new_string("").unwrap();
+        }
+    }
     // Convert the output Rust String to a new jstring and return it
     let output_jstring: jstring = **env
-        .new_string(acc.pickle(p_key).unwrap())
+        .new_string(pickle)
         .expect("Failed to create output jstring");
 
     output_jstring
@@ -310,7 +327,15 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1oneTimeKeys(
 ) -> jstring {
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
 
-    let keys = acc.one_time_keys().unwrap();
+    let keys; //  = acc.one_time_keys().unwrap();
+    match result_or_java_exception(&mut env, acc.one_time_keys()) {
+        Ok(value) => {
+            keys = value;
+        }
+        Err(_) => {
+            return **env.new_string("").unwrap();
+        }
+    }
     let output_jstring: jstring = **env
         .new_string(serde_json::to_string(&keys).unwrap())
         .expect("Failed to create output ed25519_key");
@@ -339,7 +364,15 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1fallbackKey(
 ) -> jstring {
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
 
-    let keys = acc.fallback_key().unwrap();
+    let keys;
+    match result_or_java_exception(&mut env, acc.fallback_key()) {
+        Ok(value) => {
+            keys = value;
+        }
+        Err(_) => {
+            return **env.new_string("").unwrap();
+        }
+    }
     let output_jstring: jstring = **env
         .new_string(serde_json::to_string(&keys).unwrap())
         .expect("Failed to create output fallback_key");
@@ -380,7 +413,16 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createOutboundSession(
     let session_config = unsafe { &mut *(config as *mut SessionConfig) };
     let ik = jstring_to_string(&mut env, identity_key);
     let otk = jstring_to_string(&mut env, one_time_key);
-    let session = acc.create_outbound_session(ik, otk, session_config).unwrap();
+
+    let session;
+    match result_or_java_exception(&mut env, acc.create_outbound_session(ik, otk, session_config)) {
+        Ok(value) => {
+            session = value;
+        }
+        Err(_) => {
+            return 0;
+        }
+    }
 
     Box::into_raw(Box::new(session)) as jlong
 }
@@ -403,21 +445,12 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createInboundSession<'a>(
         message_type: message_type as u32
     };
 
-    //let res2 =  acc.create_inbound_session(ik, &message).except();
     let res;
-    match acc.create_inbound_session(ik, &message) {
+    match result_or_java_exception(&mut env, acc.create_inbound_session(ik, &message)) {
         Ok(value) => {
             res = value;
         }
-        Err(error) => {
-            let msg_obj = env.new_string(error.to_string()).unwrap();
-            let obj = env.new_object(
-                "java/lang/Throwable",
-                "(Ljava/lang/String;)V",
-                &[(&msg_obj).into()]
-            ).unwrap();
-            let throwable = JThrowable::from(obj);
-            env.throw(throwable).unwrap();
+        Err(_) => {
             return JObject::null();
         }
     }

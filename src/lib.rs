@@ -12,7 +12,8 @@ use jni::descriptors::Desc;
 //use jni::*;
 
 use jni::JNIEnv;
-use jni::objects::{JClass, JObject, JString};
+use jni::objects::{JClass, JObject, JString, JThrowable, JValue};
+use jni::signature::ReturnType::Object;
 use jni::sys::jlong;
 
 #[no_mangle]
@@ -76,6 +77,40 @@ pub fn jstring_to_string(env: &mut JNIEnv, obj: JString) -> String {
     env.get_string(&obj).expect("Couldn't get Java string").into()
 }
 
+// "de/cogia/vodozemac/OlmException"
+pub fn result_or_java_exception<'a, T>(
+    env: &mut JNIEnv<'a>,
+    result: Result<T, Box<dyn Error>>,
+) -> Result<T, Box<dyn Error>>
+where
+    T: 'a,
+{
+    return get_result_or_java_exception(env, result, "de/cogia/vodozemac/OlmException");
+}
+
+pub fn get_result_or_java_exception<'a, T>(
+    env: &mut JNIEnv<'a>,
+    result: Result<T, Box<dyn Error>>,
+    exception_class: &str,
+) -> Result<T, Box<dyn Error>>
+where
+    T: 'a,
+{
+    match result {
+        Ok(value) => Ok(value),
+        Err(error) => {
+            let msg_obj = env.new_string(error.to_string()).unwrap();
+            let obj = env.new_object(
+                exception_class,
+                "(Ljava/lang/String;)V",
+                &[(&msg_obj).into()]
+            ).expect("Couldn't create java.lang.Throwable");
+            let throwable = JThrowable::from(obj);
+            env.throw(throwable).unwrap();
+            Err(Box::new(CustomError(error.to_string().to_owned())))
+        }
+    }
+}
 
 #[derive(Debug)]
 struct CustomError(String);

@@ -29,7 +29,7 @@ public class OlmAccount {
     private static native InboundCreationResult _createInboundSession(final long ptr,
                                                                       final String identityKey,
                                                                       final String chiperText,
-                                                                      final long messageType) throws Throwable;
+                                                                      final long messageType) throws OlmException;
 
     public OlmAccount() {
         ptr = _new();
