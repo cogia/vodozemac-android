@@ -4,4 +4,8 @@ public class OlmException extends RuntimeException {
     public OlmException(String message) {
         super(message);
     }
+
+    public OlmException(Throwable throwable) {
+        super(throwable);
+    }
 }
