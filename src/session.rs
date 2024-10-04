@@ -111,7 +111,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1pickle(
             pickle = value;
         }
         Err(_) => {
-            return **env.new_string("").expect("Couldn't create Java string");
+            pickle = String::from("Invalid pickle");;
         }
     }
     // Convert the output Rust String to a new jstring and return it
@@ -211,7 +211,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1decrypt(
             res = value;
         }
         Err(_) => {
-            return **env.new_string("").expect("Couldn't create Java string");
+            res = String::from("Invalid string");;
         }
     }
 

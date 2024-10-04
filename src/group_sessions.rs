@@ -2,7 +2,7 @@ use std::error::Error;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni::sys::{jlong, jstring};
-use super::{jstring_to_string, CustomError, OlmMessage, SessionConfig};
+use super::{jstring_to_string, result_or_java_exception, CustomError, OlmMessage, SessionConfig};
 
 use vodozemac::megolm::{ExportedSessionKey, MegolmMessage, SessionKey};
 use crate::account::Account;
@@ -222,9 +222,18 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmGroupSession__1pickle(
     let session = unsafe { &mut *(my_ptr as *mut GroupSession) };
     let local_pswd = jstring_to_string(&mut env, pswd);
 
+    let pickle;
+    match result_or_java_exception(&mut env, session.pickle(local_pswd)) {
+        Ok(value) => {
+            pickle = value;
+        }
+        Err(_) => {
+            pickle = String::from("Invalid pickle");
+        }
+    }
     // Convert the output Rust String to a new jstring and return it
     let output_jstring: jstring = **env
-        .new_string(session.pickle(local_pswd).unwrap())
+        .new_string(pickle)
         .expect("Failed to create output session_key");
 
     output_jstring
@@ -270,9 +279,18 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1pickle(
     let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
     let local_pswd = jstring_to_string(&mut env, pswd);
 
+    let res;
+    match result_or_java_exception(&mut env, session.pickle(local_pswd.as_bytes())) {
+        Ok(value) => {
+            res = value;
+        }
+        Err(_) => {
+            res = String::from("Invalid pickle");
+        }
+    }
     // Convert the output Rust String to a new jstring and return it
     let output_jstring: jstring = **env
-        .new_string(session.pickle(local_pswd.as_bytes()).unwrap())
+        .new_string(res)
         .expect("Failed to create output session_key");
 
     output_jstring
@@ -346,7 +364,15 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1import(
 ) -> jlong {
     let session_config = unsafe { &mut *(config as *mut SessionConfig) };
     let session_key_local = jstring_to_string(&mut env, session_key);
-    let session = InboundGroupSession::import(session_key_local, session_config).unwrap();
+    let session;
+    match result_or_java_exception(&mut env, InboundGroupSession::import(session_key_local, session_config)) {
+        Ok(value) => {
+            session = value;
+        }
+        Err(_) => {
+            return 0 as jlong;
+        }
+    }
     Box::into_raw(Box::new(session)) as jlong
 }
 
@@ -358,7 +384,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1export_1at(
     index: jlong,
 ) -> jstring {
     let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
-    ;
+
     // Convert the output Rust String to a new jstring and return it
     let output_jstring: jstring = **env
         .new_string(session.export_at(index as u32).unwrap())
@@ -368,7 +394,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1export_1at(
 }
 
 #[no_mangle]
-pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1decrypt<'a>(
+pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1decrypt<'a>(
     mut env: JNIEnv<'a>,
     _class: JClass,
     my_ptr: jlong,
@@ -377,7 +403,15 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1decrypt<'a>(
     let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
 
     let chipertext_local = jstring_to_string(&mut env, chipertext);
-    let res = session.decrypt(chipertext_local).unwrap();
+    let res;
+    match result_or_java_exception(&mut env, session.decrypt(chipertext_local)) {
+        Ok(value) => {
+            res = value;
+        }
+        Err(_) => {
+            return JObject::null();
+        }
+    }
 
     let decrypted_message = env.new_string(res.plaintext).unwrap();
     let decrypted_message_index = res.message_index as jlong;

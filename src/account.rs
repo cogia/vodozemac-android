@@ -215,7 +215,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1pickle(
             pickle = value;
         }
         Err(_) => {
-            return **env.new_string("").unwrap();
+            pickle = String::from("Invalid pickle");
         }
     }
     // Convert the output Rust String to a new jstring and return it
@@ -333,7 +333,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1oneTimeKeys(
             keys = value;
         }
         Err(_) => {
-            return **env.new_string("").unwrap();
+            keys = HashMap::new();
         }
     }
     let output_jstring: jstring = **env
@@ -370,7 +370,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1fallbackKey(
             keys = value;
         }
         Err(_) => {
-            return **env.new_string("").unwrap();
+            keys = HashMap::new();
         }
     }
     let output_jstring: jstring = **env

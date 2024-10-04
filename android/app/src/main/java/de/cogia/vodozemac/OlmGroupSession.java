@@ -8,7 +8,7 @@ public class OlmGroupSession {
     private static native String _session_key(final long ptr);
     private static native String _message_key(final long ptr);
     private static native String _encrypt(final long ptr, final String message);
-    private static native String _pickle(final long ptr, final String passPhrase);
+    private static native String _pickle(final long ptr, final String passPhrase) throws OlmException;
     private static native long _from_pickle(final String pickle, final String passPhrase);
 
     public OlmGroupSession(final SessionConfig config) {
@@ -35,16 +35,16 @@ public class OlmGroupSession {
         return _encrypt(ptr, message);
     }
 
-    public String pickle(final String passPhrase) throws Exception {
+    public String pickle(final String passPhrase) throws OlmException {
         if (passPhrase == null || passPhrase.length() != 32) {
-            throw new Exception("Pickle key must be 32 length");
+            throw new OlmException("Pickle key must be 32 length");
         }
         return  _pickle(ptr, passPhrase);
     }
 
-    public static OlmGroupSession fromPickle(final String pickle, final String passPhrase) throws Exception {
+    public static OlmGroupSession fromPickle(final String pickle, final String passPhrase) throws OlmException {
         if (passPhrase == null || passPhrase.length() != 32) {
-            throw new Exception("Pickle key must be 32 length");
+            throw new OlmException("Pickle key must be 32 length");
         }
         final long ptr = _from_pickle(pickle, passPhrase);
         return new OlmGroupSession(ptr);
