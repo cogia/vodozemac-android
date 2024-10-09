@@ -13,6 +13,7 @@ import org.json.JSONException;
 import de.cogia.vodozemac.IdentityKeys;
 import de.cogia.vodozemac.InboundCreationResult;
 import de.cogia.vodozemac.OlmAccount;
+import de.cogia.vodozemac.OlmException;
 import de.cogia.vodozemac.OlmMessage;
 import de.cogia.vodozemac.OlmSession;
 import de.cogia.vodozemac.SessionConfig;
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             testEncryption();
-        } catch (JSONException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
     }
-    public static void testEncryption() throws JSONException {
+    public static void testEncryption() throws JSONException, OlmException {
         OlmAccount alice = new OlmAccount();
         OlmAccount bob = new OlmAccount();
 
@@ -83,12 +84,13 @@ public class MainActivity extends AppCompatActivity {
         System.out.println(session.sessionId());
         OlmMessage res = session.encrypt("Hello there");
         InboundCreationResult iRes = bob.createInboundSession(alice.curve25519Key(), res);
-        InboundCreationResult iRes2 = bob.createInboundSession(alice.curve25519Key(), res);
+        //InboundCreationResult iRes2 = bob.createInboundSession(alice.curve25519Key(), res);
 
         System.out.println(iRes.getPlainText() ==  "Hello there");
 
         OlmMessage message = iRes.getSession().encrypt("ddddd");
-        String decrypted2 = session.decrypt(message);
+
+        String decrypted2 = session.decrypt(new OlmMessage("asdasdasd", 0));
         System.out.println(message.getCiphertext() == decrypted2);
         // one time key removes on first usage
         //t.false(isEqual(bobOnetimeKeys, Object.values(bob.oneTimeKeys)))

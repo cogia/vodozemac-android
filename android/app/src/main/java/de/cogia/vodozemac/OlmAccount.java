@@ -39,7 +39,7 @@ public class OlmAccount {
         this.ptr = ptr;
     }
 
-    public IdentityKeys identityKeys() {
+    public IdentityKeys identityKeys() throws OlmException {
         return _identity_keys(ptr);
     }
 

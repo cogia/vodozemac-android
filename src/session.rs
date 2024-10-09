@@ -74,14 +74,9 @@ impl Session {
     }
 
     pub fn decrypt(&mut self, message: &OlmMessage) -> Result<String, Box<dyn Error>> {
-        /*let _message =
-            vodozemac::olm::OlmMessage::from_parts(message.message_type.try_into().unwrap(), &message.ciphertext.as_bytes())
-                .map_err(|err: _| Error::new(Status::GenericFailure, err.to_string().to_owned()))?;
-
-        Ok(self.inner.decrypt(&_message).map_err(|err: _| Error::new(Status::GenericFailure, err.to_string().to_owned()))?)*/
         let _message = vodozemac::olm::OlmMessage::from_parts(
             message.message_type.try_into().unwrap(),
-            &base64_decode(&message.ciphertext).unwrap()
+            &base64_decode(&message.ciphertext).map_err(|err| Box::new(err) as Box<dyn Error>)?,
         )
             .map_err(|err: _| Box::new(err) as Box<dyn Error>)?;
 
@@ -208,18 +203,16 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1decrypt(
     let res;
     match result_or_java_exception(&mut env, session.decrypt(&message)) {
         Ok(value) => {
-            res = value;
+            res = **env
+                .new_string(value)
+                .expect("Failed to create output session_id");;
         }
         Err(_) => {
-            res = String::from("Invalid string");;
+            res = std::ptr::null_mut()
         }
     }
 
-    let output_jstring: jstring = **env
-        .new_string(res)
-        .expect("Failed to create output session_id");
-
-    output_jstring
+    res
 }
 
 #[no_mangle]

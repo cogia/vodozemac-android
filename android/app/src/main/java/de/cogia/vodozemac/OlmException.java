@@ -1,6 +1,6 @@
 package de.cogia.vodozemac;
 
-public class OlmException extends RuntimeException {
+public class OlmException extends Exception {
     public OlmException(String message) {
         super(message);
     }
