@@ -1,29 +1,50 @@
 use std::error::Error;
 use jni::JNIEnv;
-use jni::objects::{JClass};
+use jni::objects::{JClass, JString};
 use jni::sys::{jlong, jstring};
+use crate::{jstring_to_string, CustomError};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Curve25519PublicKey(pub(crate) vodozemac::Curve25519PublicKey);
+
+impl Curve25519PublicKey {
+    pub fn from_base64(key: &str) -> Result<Box<Curve25519PublicKey>, Box<dyn Error>> {
+        Ok(Curve25519PublicKey(vodozemac::Curve25519PublicKey::from_base64(key).map_err(|err: _| Box::new(err) as Box<dyn Error>)?).into())
+    }
+
+    #[allow(clippy::wrong_self_convention)]
+    pub fn to_base64(&self) -> String {
+        self.0.to_base64()
+    }
+}
 pub struct Sas {
-    inner: vodozemac::sas::Sas,
+    inner: Option<vodozemac::sas::Sas>,
 }
 
 
 impl Sas {
     pub fn new() -> Self {
         Self {
-            inner: vodozemac::sas::Sas::new(),
+            inner: Some(vodozemac::sas::Sas::new()),
         }
     }
 
-    pub fn public_key(&self) -> String {
-        self.inner.public_key().to_base64()
+    pub fn public_key(&mut self) -> String {
+        if let Some(sas) = self.inner.take() {
+            return sas.public_key().to_base64();
+        }
+        return String::new();
     }
 
-    pub fn diffie_hellman(self, key: String) -> Result<EstablishedSas, Box<dyn Error>> {
-        let sass = self.inner.diffie_hellman_with_raw(&key)
-            .map_err(|err: _| Box::new(err) as Box<dyn Error>)?;
-
-        Ok(EstablishedSas { inner: sass })
+    pub fn diffie_hellman(&mut self, key: String) -> Result<EstablishedSas, Box<dyn Error>> {
+        if let Some(sas) = self.inner.take() {
+            let pub_key = Curve25519PublicKey::from_base64(&key).unwrap();
+            let sass = sas.diffie_hellman(pub_key.0)
+                .map_err(|err: _| Box::new(err) as Box<dyn Error>)?;
+            Ok(EstablishedSas { inner: sass })
+        } else {
+            Err(Box::new(CustomError("Invalid message type, expected a pre-key message".to_owned())))
+        }
     }
 }
 
@@ -96,7 +117,7 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSas__1public_1key(
     output_jstring
 }
 
-/*#[no_mangle]
+#[no_mangle]
 pub extern "C" fn Java_de_cogia_vodozemac_OlmSas__1diffie_1hellman(
     mut env: JNIEnv,
     _class: JClass,
@@ -104,11 +125,9 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSas__1diffie_1hellman(
     key: JString,
 ) -> jlong {
     let sas = unsafe { &mut *(my_ptr as *mut Sas) };
-&mut sas
     let localKey = jstring_to_string(&mut env, key);
     let established = sas.diffie_hellman(localKey).unwrap();
     Box::into_raw(Box::new(established)) as jlong
-
-    /// ^^^^^^^^^^ move occurs because `self.inner` has type `vodozemac::sas::Sas`, which does not implement the `Copy` trait
-}*/
+    // ^^^^^^^^^^ move occurs because `self.inner` has type `vodozemac::sas::Sas`, which does not implement the `Copy` trait
+}
 // diffie_hellman
