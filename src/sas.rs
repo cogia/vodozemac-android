@@ -1,8 +1,8 @@
 use std::error::Error;
 use jni::JNIEnv;
-use jni::objects::{JClass, JString};
-use jni::sys::{jlong, jstring};
-use crate::{jstring_to_string, CustomError};
+use jni::objects::{JByteArray, JCharArray, JClass, JObject, JPrimitiveArray, JString};
+use jni::sys::{jboolean, jbyteArray, jchar, jcharArray, jlong, jshort, jshortArray, jsize, jstring};
+use crate::{jstring_to_string, result_or_java_exception, CustomError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Curve25519PublicKey(pub(crate) vodozemac::Curve25519PublicKey);
@@ -55,7 +55,6 @@ pub struct EstablishedSas {
 impl EstablishedSas {
     pub fn bytes(&self, info: String) -> SasBytes {
         let bytes = self.inner.bytes(&info);
-
         SasBytes { inner: bytes }
     }
 
@@ -126,8 +125,133 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSas__1diffie_1hellman(
 ) -> jlong {
     let sas = unsafe { &mut *(my_ptr as *mut Sas) };
     let localKey = jstring_to_string(&mut env, key);
-    let established = sas.diffie_hellman(localKey).unwrap();
-    Box::into_raw(Box::new(established)) as jlong
-    // ^^^^^^^^^^ move occurs because `self.inner` has type `vodozemac::sas::Sas`, which does not implement the `Copy` trait
+
+    let res;
+    match result_or_java_exception(&mut env, sas.diffie_hellman(localKey)) {
+        Ok(value) => {
+            res =  Box::into_raw(Box::new(value)) as jlong
+        }
+        Err(_) => {
+            res = -1;
+        }
+    }
+    res
 }
-// diffie_hellman
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmEstablishedSas__1bytes(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    info: JString,
+) -> jlong {
+    let sas = unsafe { &mut *(my_ptr as *mut EstablishedSas) };
+    let localKey = jstring_to_string(&mut env, info);
+    let established = sas.bytes(localKey);
+    Box::into_raw(Box::new(established)) as jlong
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmEstablishedSas__1calculate_1mac(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    input: JString,
+    info: JString,
+) -> jstring {
+    let sas = unsafe { &mut *(my_ptr as *mut EstablishedSas) };
+    let local_input = jstring_to_string(&mut env, input);
+    let local_key = jstring_to_string(&mut env, info);
+
+    let output_jstring: jstring = **env
+        .new_string(sas.calculate_mac(local_input, local_key))
+        .expect("Failed to create output ed25519_key");
+
+    output_jstring
+}
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmEstablishedSas__1calculate_1mac_1invalid_1sbase64(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    input: JString,
+    info: JString,
+) -> jstring {
+    let sas = unsafe { &mut *(my_ptr as *mut EstablishedSas) };
+    let local_input = jstring_to_string(&mut env, input);
+    let local_key = jstring_to_string(&mut env, info);
+
+    let output_jstring: jstring = **env
+        .new_string(sas.calculate_mac_invalid_base64(local_input, local_key))
+        .expect("Failed to create output ed25519_key");
+
+    output_jstring
+}
+
+
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmEstablishedSas__1verify_1mac(
+    mut env: JNIEnv,
+    _class: JClass,
+    my_ptr: jlong,
+    input: JString,
+    info: JString,
+    tag: JString
+) -> jboolean {
+    let sas = unsafe { &mut *(my_ptr as *mut EstablishedSas) };
+    let local_input = jstring_to_string(&mut env, input);
+    let local_key = jstring_to_string(&mut env, info);
+    let local_tag = jstring_to_string(&mut env, tag);
+
+
+    let res;
+    match result_or_java_exception(&mut env, sas.verify_mac(local_input, local_key, local_tag)) {
+        Ok(value) => {
+            res =  true
+        }
+        Err(_) => {
+            res = false;
+        }
+    }
+
+    res
+}
+
+
+/*
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmSasBytes__1decimals<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    my_ptr: jlong,
+) -> JByteArray<'local> {
+    let sas = unsafe { &mut *(my_ptr as *mut SasBytes) };
+
+    let rust_vec = sas.decimals();
+
+    let mut bytes = Vec::new();
+    for &num in &rust_vec {
+        bytes.extend_from_slice(&num.to_be_bytes()); // to_be_bytes for big-endian
+    }
+
+    // Create a new Java byte array
+    let output_array = env.new_char_array(bytes.len() as jsize)
+        .expect("Couldn't create java byte array!");
+
+    // Fill the Java byte array
+    env.aet_(output_array, 0, &bytes)
+        .expect("Couldn't set java byte array!");
+
+    // Return the Java byte array
+    unsafe {
+        output_array
+    }
+}
+
+
+impl SasBytes {
+    pub fn emoji_indices(&self) -> Vec<u8> {
+    pub fn decimals(&self) -> Vec<u16> {
+
+ */
