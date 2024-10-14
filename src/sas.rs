@@ -1,7 +1,7 @@
 use std::error::Error;
 use jni::JNIEnv;
-use jni::objects::{JByteArray, JCharArray, JClass, JObject, JPrimitiveArray, JString};
-use jni::sys::{jboolean, jbyteArray, jchar, jcharArray, jlong, jshort, jshortArray, jsize, jstring};
+use jni::objects::{JByteArray, JCharArray, JClass, JLongArray, JObject, JPrimitiveArray, JString};
+use jni::sys::{jboolean, jbyteArray, jchar, jcharArray, jlong, jlongArray, jshort, jshortArray, jsize, jstring};
 use crate::{jstring_to_string, result_or_java_exception, CustomError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -219,39 +219,30 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmEstablishedSas__1verify_1mac(
 }
 
 
-/*
+
 #[no_mangle]
 pub extern "C" fn Java_de_cogia_vodozemac_OlmSasBytes__1decimals<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass,
     my_ptr: jlong,
-) -> JByteArray<'local> {
+) -> JLongArray<'local> {
     let sas = unsafe { &mut *(my_ptr as *mut SasBytes) };
-
-    let rust_vec = sas.decimals();
-
-    let mut bytes = Vec::new();
-    for &num in &rust_vec {
-        bytes.extend_from_slice(&num.to_be_bytes()); // to_be_bytes for big-endian
-    }
-
-    // Create a new Java byte array
-    let output_array = env.new_char_array(bytes.len() as jsize)
-        .expect("Couldn't create java byte array!");
-
-    // Fill the Java byte array
-    env.aet_(output_array, 0, &bytes)
-        .expect("Couldn't set java byte array!");
-
-    // Return the Java byte array
-    unsafe {
-        output_array
-    }
+    let long_vec: Vec<jlong> =  sas.decimals().iter().map(|&x| x as jlong).collect();
+    let long_array = env.new_long_array(long_vec.len() as i32).unwrap();
+    env.set_long_array_region(&long_array, 0, &long_vec).unwrap();
+    long_array
 }
 
 
-impl SasBytes {
-    pub fn emoji_indices(&self) -> Vec<u8> {
-    pub fn decimals(&self) -> Vec<u16> {
-
- */
+#[no_mangle]
+pub extern "C" fn Java_de_cogia_vodozemac_OlmSasBytes__1emoji_1indices<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    my_ptr: jlong,
+) -> JLongArray<'local> {
+    let sas = unsafe { &mut *(my_ptr as *mut SasBytes) };
+    let long_vec: Vec<jlong> =  sas.emoji_indices().iter().map(|&x| x as jlong).collect();
+    let long_array = env.new_long_array(long_vec.len() as i32).unwrap();
+    env.set_long_array_region(&long_array, 0, &long_vec).unwrap();
+    long_array
+}
