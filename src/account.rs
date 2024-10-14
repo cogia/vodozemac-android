@@ -145,7 +145,8 @@ impl Account {
 
         let _message = vodozemac::olm::OlmMessage::from_parts(
             message.message_type.try_into().unwrap(),
-            &(base64_decode(&message.ciphertext).unwrap())
+            &base64_decode(&message.ciphertext).map_err(|err| Box::new(err) as Box<dyn Error>)?
+           // &(base64_decode(&message.ciphertext).unwrap())
             // &message.ciphertext.as_bytes()
         )
             .map_err(|err: _| Box::new(err) as Box<dyn Error>)?;

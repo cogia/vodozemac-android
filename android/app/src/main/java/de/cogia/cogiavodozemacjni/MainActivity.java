@@ -90,8 +90,21 @@ public class MainActivity extends AppCompatActivity {
 
         OlmMessage message = iRes.getSession().encrypt("ddddd");
 
-        String decrypted2 = session.decrypt(new OlmMessage("asdasdasd", 0));
-        System.out.println(message.getCiphertext() == decrypted2);
+
+        try {
+            String decrypted2 = session.decrypt(new OlmMessage("asdasdasd", 0));
+            System.out.println(message.getCiphertext() == decrypted2);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+        try {
+            boolean decrypted2 = session.sessionMatches(new OlmMessage("asdasdasd", 0));
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+
         // one time key removes on first usage
         //t.false(isEqual(bobOnetimeKeys, Object.values(bob.oneTimeKeys)))
         //t.false(Object.values(bob.oneTimeKeys).includes(bobFirstOnetimeKey))*/

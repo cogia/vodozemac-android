@@ -47,7 +47,7 @@ impl Session {
         let message =
             vodozemac::olm::OlmMessage::from_parts(
                 message.message_type.try_into().unwrap(),
-                &base64_decode(&message.ciphertext).unwrap()
+                &base64_decode(&message.ciphertext).unwrap_or_else(|_| Vec::new())
             );
 
         match message {
