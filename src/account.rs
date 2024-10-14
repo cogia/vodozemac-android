@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use vodozemac::base64_decode;
 use vodozemac::olm::{InboundCreationResult, SessionConfig};
 use std::error::Error;
-use std::panic;
 use jni::JNIEnv;
-use jni::objects::{JClass, JObject, JString, JThrowable, JValue};
+use jni::objects::{JClass, JObject, JString, JValue};
 use jni::sys::{jlong, jstring};
 use super::{session::Session, OlmMessage, IdentityKeys, CustomError, jstring_to_string, result_or_java_exception};
 

@@ -2,11 +2,9 @@ use std::error::Error;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni::sys::{jlong, jstring};
-use super::{jstring_to_string, result_or_java_exception, CustomError, OlmMessage, SessionConfig};
+use super::{jstring_to_string, result_or_java_exception, CustomError, SessionConfig};
 
 use vodozemac::megolm::{ExportedSessionKey, MegolmMessage, SessionKey};
-use crate::account::Account;
-use crate::session::Session;
 
 pub struct GroupSession {
     pub(super) inner: vodozemac::megolm::GroupSession,

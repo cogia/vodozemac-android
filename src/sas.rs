@@ -1,7 +1,7 @@
 use std::error::Error;
 use jni::JNIEnv;
-use jni::objects::{JByteArray, JCharArray, JClass, JLongArray, JObject, JPrimitiveArray, JString};
-use jni::sys::{jboolean, jbyteArray, jchar, jcharArray, jlong, jlongArray, jshort, jshortArray, jsize, jstring};
+use jni::objects::{JClass, JLongArray, JString};
+use jni::sys::{jboolean, jlong, jstring};
 use crate::{jstring_to_string, result_or_java_exception, CustomError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
