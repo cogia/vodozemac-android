@@ -221,20 +221,19 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmGroupSession__1pickle(
     let local_pswd = jstring_to_string(&mut env, pswd);
 
     let pickle;
+
     match result_or_java_exception(&mut env, session.pickle(local_pswd)) {
         Ok(value) => {
-            pickle = value;
+            pickle = **env
+                .new_string(value)
+                .expect("Failed to create output session_key");
         }
         Err(_) => {
-            pickle = String::from("Invalid pickle");
+            pickle = std::ptr::null_mut()
         }
     }
-    // Convert the output Rust String to a new jstring and return it
-    let output_jstring: jstring = **env
-        .new_string(pickle)
-        .expect("Failed to create output session_key");
 
-    output_jstring
+    pickle
 }
 
 #[no_mangle]
@@ -277,21 +276,20 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmInboundGroupSession__1pickle(
     let session = unsafe { &mut *(my_ptr as *mut InboundGroupSession) };
     let local_pswd = jstring_to_string(&mut env, pswd);
 
-    let res;
+    let keys;
+
     match result_or_java_exception(&mut env, session.pickle(local_pswd.as_bytes())) {
         Ok(value) => {
-            res = value;
+            keys = **env
+                .new_string(value)
+                .expect("Failed to create output session_key");
         }
         Err(_) => {
-            res = String::from("Invalid pickle");
+            keys = std::ptr::null_mut()
         }
     }
-    // Convert the output Rust String to a new jstring and return it
-    let output_jstring: jstring = **env
-        .new_string(res)
-        .expect("Failed to create output session_key");
 
-    output_jstring
+    keys
 }
 
 #[no_mangle]

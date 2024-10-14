@@ -103,18 +103,16 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmSession__1pickle(
     let pickle;
     match result_or_java_exception(&mut env, session.pickle(p_key)) {
         Ok(value) => {
-            pickle = value;
+            pickle = **env
+                .new_string(value)
+                .expect("Failed to create output session_id");;
         }
         Err(_) => {
-            pickle = String::from("Invalid pickle");;
+            pickle = std::ptr::null_mut()
         }
     }
-    // Convert the output Rust String to a new jstring and return it
-    let output_jstring: jstring = **env
-        .new_string(pickle)
-        .expect("Failed to create output session pickle");
 
-    output_jstring
+    pickle
 }
 
 #[no_mangle]

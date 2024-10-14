@@ -171,31 +171,33 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1new() -> jlong {
 #[no_mangle]
 pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1identity_1keys(mut env: JNIEnv, my_ptr: jlong) -> JObject {
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
-    let keys; // = acc.identity_keys().unwrap();
+    let keys;
+
     match result_or_java_exception(&mut env, acc.identity_keys()) {
         Ok(value) => {
-            keys = value;
+
+            let java_class = env.find_class("de/cogia/vodozemac/IdentityKeys").unwrap();
+
+            let ed25519 = env.new_string(value.ed25519).unwrap();
+            let curve25519 = env.new_string(value.curve25519).unwrap();
+            let args: &[JValue] = &[
+                (&ed25519).into(),
+                (&curve25519).into(),
+            ];
+
+            keys = env.new_object(
+                java_class,
+                "(Ljava/lang/String;Ljava/lang/String;)V",
+                args
+            )
+                .unwrap();
         }
         Err(_) => {
-            return JObject::null();
+            keys = JObject::null();
         }
     }
-    let java_class = env.find_class("de/cogia/vodozemac/IdentityKeys").unwrap();
 
-    let ed25519 = env.new_string(keys.ed25519).unwrap();
-    let curve25519 = env.new_string(keys.curve25519).unwrap();
-    let args: &[JValue] = &[
-        (&ed25519).into(),
-        (&curve25519).into(),
-    ];
-
-    let java_object = env.new_object(
-        java_class,
-        "(Ljava/lang/String;Ljava/lang/String;)V",
-        args
-    )
-        .unwrap();
-    java_object
+    keys
 }
 
 
@@ -212,18 +214,16 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1pickle(
     let pickle;
     match result_or_java_exception(&mut env, acc.pickle(p_key)) {
         Ok(value) => {
-            pickle = value;
+            pickle = **env
+                .new_string(value)
+                .expect("Failed to create output session_id");;
         }
         Err(_) => {
-            pickle = String::from("Invalid pickle");
+            pickle = std::ptr::null_mut()
         }
     }
-    // Convert the output Rust String to a new jstring and return it
-    let output_jstring: jstring = **env
-        .new_string(pickle)
-        .expect("Failed to create output jstring");
 
-    output_jstring
+    pickle
 }
 
 #[no_mangle]
@@ -327,20 +327,20 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1oneTimeKeys(
 ) -> jstring {
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
 
-    let keys; //  = acc.one_time_keys().unwrap();
-    match result_or_java_exception(&mut env, acc.one_time_keys()) {
+    let keys;
+
+    match result_or_java_exception(&mut env, acc.one_time_keys()){
         Ok(value) => {
-            keys = value;
+            keys = **env
+                .new_string(serde_json::to_string(&value).unwrap())
+                .expect("Failed to create output ed25519_key");
         }
         Err(_) => {
-            keys = HashMap::new();
+            keys = std::ptr::null_mut()
         }
     }
-    let output_jstring: jstring = **env
-        .new_string(serde_json::to_string(&keys).unwrap())
-        .expect("Failed to create output ed25519_key");
 
-    output_jstring
+    keys
 }
 
 #[no_mangle]
@@ -365,19 +365,19 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1fallbackKey(
     let acc = unsafe { &mut *(my_ptr as *mut Account) };
 
     let keys;
+
     match result_or_java_exception(&mut env, acc.fallback_key()) {
         Ok(value) => {
-            keys = value;
+            keys = **env
+                .new_string(serde_json::to_string(&value).unwrap())
+                .expect("Failed to create output fallback_key");
         }
         Err(_) => {
-            keys = HashMap::new();
+            keys = std::ptr::null_mut()
         }
     }
-    let output_jstring: jstring = **env
-        .new_string(serde_json::to_string(&keys).unwrap())
-        .expect("Failed to create output fallback_key");
 
-    output_jstring
+    keys
 }
 
 #[no_mangle]
@@ -417,14 +417,15 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createOutboundSession(
     let session;
     match result_or_java_exception(&mut env, acc.create_outbound_session(ik, otk, session_config)) {
         Ok(value) => {
-            session = value;
+            session = Box::into_raw(Box::new(value)) as jlong;
         }
         Err(_) => {
-            return 0;
+            session = 0
         }
     }
 
-    Box::into_raw(Box::new(session)) as jlong
+    session
+
 }
 
 
@@ -448,31 +449,32 @@ pub extern "C" fn Java_de_cogia_vodozemac_OlmAccount__1createInboundSession<'a>(
     let res;
     match result_or_java_exception(&mut env, acc.create_inbound_session(ik, &message)) {
         Ok(value) => {
-            res = value;
+            let session = Session { inner: value.session };
+            let ptr = Box::into_raw(Box::new(session)) as jlong;
+            let message = String::from_utf8_lossy(&value.plaintext).to_string();
+            let jmessage  =  env.new_string(&message).unwrap();
+
+            let java_class = env.find_class("de/cogia/vodozemac/InboundCreationResult").unwrap();
+
+            let args: &[JValue] = &[
+                (&jmessage).into(),
+                (ptr).into(),
+            ];
+
+            let java_object = env.new_object(
+                java_class,
+                "(Ljava/lang/String;J)V",
+                args
+            ).unwrap();
+
+            res = java_object;
         }
         Err(_) => {
-            return JObject::null();
+            res = JObject::null();
         }
     }
 
-    let session = Session { inner: res.session };
-    let ptr = Box::into_raw(Box::new(session)) as jlong;
-    let message = String::from_utf8_lossy(&res.plaintext).to_string();
-    let jmessage  =  env.new_string(&message).unwrap();
+    res
 
-    let java_class = env.find_class("de/cogia/vodozemac/InboundCreationResult").unwrap();
-
-    let args: &[JValue] = &[
-        (&jmessage).into(),
-        (ptr).into(),
-    ];
-
-    let java_object = env.new_object(
-        java_class,
-        "(Ljava/lang/String;J)V",
-        args
-    ).unwrap();
-
-    java_object.into()
 }
 
